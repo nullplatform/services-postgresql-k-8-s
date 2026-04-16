@@ -96,29 +96,38 @@ Creates an isolated database user for an application to consume. Returns `userna
 
 ## Installation
 
-Register this service definition in your nullplatform account using Terraform:
+Register this service definition in your nullplatform account using the provided OpenTofu module under `tofu-module/`:
 
 ```hcl
-module "postgres_db_service_definition" {
-  source = "git@github.com:nullplatform/main-terraform-modules.git//modules/nullplatform/scope-definition?ref=alpha"
+module "postgres_db" {
+  source = "path/to/services-postgresql-k8s/tofu-module"
 
-  nrn              = var.np_account_nrn
-  np_api_key       = var.np_api_key
-  git_repo         = "nullplatform/services-postgresql-k8s"
-  git_ref          = "main"
-  git_service_path = "postgres/k8s"
-  service_name     = "Postgres DB"
-  service_description = "Managed PostgreSQL for Kubernetes workloads"
-}
-
-module "postgres_db_service_agent_association" {
-  source = "git@github.com:nullplatform/main-terraform-modules.git//modules/nullplatform/service-definition-agent-association?ref=alpha"
-
-  agent_api_key      = var.np_api_key
-  service_definition = module.postgres_db_service_definition
-  agent_tags         = var.agent_tags
+  nrn            = var.nrn
+  np_api_key     = var.np_api_key
+  tags_selectors = var.tags_selectors
 }
 ```
+
+**Variables:**
+
+| Variable        | Type          | Sensitive | Description                                      |
+|-----------------|---------------|-----------|--------------------------------------------------|
+| `nrn`           | `string`      | No        | Nullplatform Resource Name                       |
+| `np_api_key`    | `string`      | Yes       | API key for authenticating with Nullplatform     |
+| `tags_selectors`| `map(string)` | No        | Tags used to select channels and agents          |
+
+**Outputs:**
+
+| Output                                  | Description                                  |
+|-----------------------------------------|----------------------------------------------|
+| `service_specification_slug_postgres_db`| Slug of the Postgres DB service specification|
+| `service_specification_id_postgres_db`  | ID of the Postgres DB service specification  |
+
+The module internally uses:
+- [`nullplatform/tofu-modules//nullplatform/service_definition@v1.52.3`](https://github.com/nullplatform/tofu-modules) — registers the service spec.
+- [`nullplatform/tofu-modules//nullplatform/service_definition_agent_association@v1.43.0`](https://github.com/nullplatform/tofu-modules) — wires the agent command to the service.
+
+Requires the `nullplatform` Terraform provider `~> 0.0.75`.
 
 ## Default Helm Values
 
@@ -154,23 +163,10 @@ securityContext:
   fsGroup: 1001
 ```
 
-## CI/CD
-
-On every push to `main`, GitHub Actions:
-
-1. Installs the nullplatform CLI.
-2. Starts a nullplatform build (`np build start`).
-3. Builds the Docker image (`docker build`).
-4. Pushes it as a nullplatform asset (`np asset push --type docker-image`).
-5. Marks the build as `successful` or `failed`.
-
-The `NULLPLATFORM_API_KEY` secret must be configured in the repository settings.
-
 ## Directory Structure
 
 ```
 .
-├── Dockerfile                              # Minimal image; real payload is the bash scripts
 ├── postgres/k8s/
 │   ├── handle-service-agent                # Entry point — delegates to np service-action exec
 │   ├── entrypoint/entrypoint               # Alias entry point
@@ -198,7 +194,11 @@ The `NULLPLATFORM_API_KEY` secret must be configured in the repository settings.
 │           ├── create-database-user
 │           ├── update-database-user
 │           └── delete-database-user
-└── .github/workflows/ci.yml
+└── tofu-module/                            # OpenTofu module to register the service in nullplatform
+    ├── main.tf                             # service_definition + agent_association resources
+    ├── variables.tf                        # nrn, np_api_key, tags_selectors
+    ├── outputs.tf                          # service slug and ID outputs
+    └── provider.tf                         # nullplatform provider ~> 0.0.75
 ```
 
 ## Troubleshooting
@@ -223,4 +223,4 @@ helm status <project>-postgres -n postgres-db
 
 ## License
 
-Part of the nullplatform services repository.
+[MIT](LICENSE) — nullplatform.

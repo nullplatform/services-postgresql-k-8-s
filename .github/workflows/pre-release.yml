@@ -1,0 +1,11 @@
+name: pre-release
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  pre-release:
+    uses: nullplatform/actions-nullplatform/.github/workflows/pre-release.yml@main
+    secrets: inherit
