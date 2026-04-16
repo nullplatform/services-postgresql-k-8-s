@@ -220,7 +220,3 @@ kubectl logs -n postgres-db -l app.kubernetes.io/name=postgresql
 # Check Helm release
 helm status <project>-postgres -n postgres-db
 ```
-
-## License
-
-[MIT](LICENSE) — nullplatform.
