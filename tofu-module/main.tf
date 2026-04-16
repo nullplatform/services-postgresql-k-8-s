@@ -19,7 +19,7 @@ module "service_definition_channel_association_postgres_db" {
   nrn                        = var.nrn
   api_key                    = var.np_api_key
   tags_selectors             = var.tags_selectors
-  service_specification_slug = data.terraform_remote_state.nullplatform.outputs.service_specification_slug_postgres_db
+  service_specification_slug = module.service_definition_postgres_db.service_specification_slug
   agent_command = {
     type = "exec"
     data = {
