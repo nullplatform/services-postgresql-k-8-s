@@ -1,0 +1,53 @@
+#!/bin/bash
+set -euo pipefail
+
+# ---------------------------------------------------------------------------
+# set_db_user_permissions — Revokes all privileges from a link's user and
+# re-grants based on the read/write/admin flags.
+#
+# Called from both "link" (after create_db_user) and "link-update"
+# workflows. Idempotent.
+# ---------------------------------------------------------------------------
+
+: "${DB_USERNAME:?DB_USERNAME is required}"
+: "${SERVICE_DBNAME:?SERVICE_DBNAME is required}"
+
+QUERY=$(cat <<SQL
+REVOKE ALL PRIVILEGES ON DATABASE "${SERVICE_DBNAME}" FROM "${DB_USERNAME}";
+REVOKE ALL PRIVILEGES ON SCHEMA public FROM "${DB_USERNAME}";
+REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM "${DB_USERNAME}";
+REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public FROM "${DB_USERNAME}";
+ALTER USER "${DB_USERNAME}" WITH NOSUPERUSER;
+SQL
+)
+
+if [ "${LINK_PERM_READ:-true}" = "true" ]; then
+  QUERY+=$'\n'"$(cat <<SQL
+GRANT CONNECT ON DATABASE "${SERVICE_DBNAME}" TO "${DB_USERNAME}";
+GRANT USAGE ON SCHEMA public TO "${DB_USERNAME}";
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO "${DB_USERNAME}";
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO "${DB_USERNAME}";
+SQL
+)"
+fi
+
+if [ "${LINK_PERM_WRITE:-false}" = "true" ]; then
+  QUERY+=$'\n'"$(cat <<SQL
+GRANT CONNECT ON DATABASE "${SERVICE_DBNAME}" TO "${DB_USERNAME}";
+GRANT USAGE, CREATE ON SCHEMA public TO "${DB_USERNAME}";
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO "${DB_USERNAME}";
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO "${DB_USERNAME}";
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO "${DB_USERNAME}";
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO "${DB_USERNAME}";
+SQL
+)"
+fi
+
+if [ "${LINK_PERM_ADMIN:-false}" = "true" ]; then
+  QUERY+=$'\n'"ALTER USER \"${DB_USERNAME}\" WITH SUPERUSER;"
+fi
+
+export QUERY
+export QUERY_TYPE="ddl"
+
+"$SERVICE_PATH/scripts/k8s/run_query"

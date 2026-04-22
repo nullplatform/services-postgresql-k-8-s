@@ -1,0 +1,23 @@
+steps:
+  - name: build context
+    type: script
+    file: $SERVICE_PATH/scripts/k8s/build_context
+    output:
+      - name: PROJECT
+        type: environment
+      - name: NAMESPACE
+        type: environment
+      - name: HELM_RELEASE_NAME
+        type: environment
+      - name: SECRET_NAME
+        type: environment
+
+  - name: helm uninstall
+    type: script
+    file: $SERVICE_PATH/scripts/k8s/do_helm
+    configuration:
+      HELM_ACTION: uninstall
+
+  - name: cleanup pvc
+    type: script
+    file: $SERVICE_PATH/scripts/k8s/cleanup_pvc

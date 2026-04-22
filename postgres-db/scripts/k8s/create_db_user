@@ -1,0 +1,16 @@
+#!/bin/bash
+set -euo pipefail
+
+# ---------------------------------------------------------------------------
+# create_db_user — Creates a new PostgreSQL user for a link.
+# Called from the "link" workflow, after build_user_context has set
+# DB_USERNAME and DB_PASSWORD.
+# ---------------------------------------------------------------------------
+
+: "${DB_USERNAME:?DB_USERNAME is required}"
+: "${DB_PASSWORD:?DB_PASSWORD is required}"
+
+export QUERY_TYPE="ddl"
+export QUERY="CREATE USER \"${DB_USERNAME}\" WITH PASSWORD '${DB_PASSWORD}';"
+
+"$SERVICE_PATH/scripts/k8s/run_query"

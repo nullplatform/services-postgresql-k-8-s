@@ -1,0 +1,26 @@
+#!/bin/bash
+set -euo pipefail
+
+# ---------------------------------------------------------------------------
+# drop_db_user — Removes a link's PostgreSQL user. Called from "unlink".
+# Revokes privileges, reassigns owned objects to postgres, then drops.
+# ---------------------------------------------------------------------------
+
+: "${DB_USERNAME:?DB_USERNAME is required}"
+: "${SERVICE_DBNAME:?SERVICE_DBNAME is required}"
+
+export QUERY_TYPE="ddl"
+export QUERY=$(cat <<SQL
+REVOKE ALL PRIVILEGES ON DATABASE "${SERVICE_DBNAME}" FROM "${DB_USERNAME}";
+REVOKE ALL PRIVILEGES ON SCHEMA public FROM "${DB_USERNAME}";
+REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM "${DB_USERNAME}";
+REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public FROM "${DB_USERNAME}";
+ALTER USER "${DB_USERNAME}" WITH NOSUPERUSER;
+REASSIGN OWNED BY "${DB_USERNAME}" TO postgres;
+DROP OWNED BY "${DB_USERNAME}";
+DROP USER IF EXISTS "${DB_USERNAME}";
+SQL
+)
+
+"$SERVICE_PATH/scripts/k8s/run_query"
+echo "User ${DB_USERNAME} dropped."

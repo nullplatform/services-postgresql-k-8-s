@@ -1,0 +1,32 @@
+steps:
+  - name: build context
+    type: script
+    file: $SERVICE_PATH/scripts/k8s/build_context
+    output:
+      - name: NAMESPACE
+        type: environment
+      - name: LINK_ID
+        type: environment
+      - name: LINK_USERNAME
+        type: environment
+      - name: OUTPUT_DIR
+        type: environment
+
+  - name: build user context
+    type: script
+    file: $SERVICE_PATH/scripts/k8s/build_user_context
+    output:
+      - name: SERVICE_HOSTNAME
+        type: environment
+      - name: SERVICE_PORT
+        type: environment
+      - name: SERVICE_DBNAME
+        type: environment
+      - name: ADMIN_PASSWORD
+        type: environment
+      - name: DB_USERNAME
+        type: environment
+
+  - name: drop db user
+    type: script
+    file: $SERVICE_PATH/scripts/k8s/drop_db_user

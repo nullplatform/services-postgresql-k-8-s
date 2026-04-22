@@ -1,0 +1,53 @@
+#!/bin/bash
+set -euo pipefail
+
+# ---------------------------------------------------------------------------
+# ensure_tools — Installs the CLI tools this service needs on the agent pod
+# if they are not already present. Idempotent; safe to invoke from any step.
+#
+# Covers: curl, openssl, jq, uuidgen, kubectl, helm, gomplate
+# ---------------------------------------------------------------------------
+
+if ! command -v curl &>/dev/null; then
+  apk add --no-cache curl
+fi
+
+if ! command -v openssl &>/dev/null; then
+  apk add --no-cache openssl
+fi
+
+if ! command -v jq &>/dev/null; then
+  apk add --no-cache jq
+fi
+
+if ! command -v uuidgen &>/dev/null; then
+  apk add --no-cache util-linux 2>/dev/null || apk add --no-cache uuidgen
+fi
+
+if ! command -v kubectl &>/dev/null; then
+  apk add --no-cache kubectl 2>/dev/null || {
+    KUBECTL_VERSION=$(curl -fsSL https://dl.k8s.io/release/stable.txt)
+    curl -fsSL -o /usr/local/bin/kubectl \
+      "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
+    chmod +x /usr/local/bin/kubectl
+  }
+fi
+
+if ! command -v helm &>/dev/null; then
+  apk add --no-cache helm 2>/dev/null || {
+    HELM_VERSION="v3.17.3"
+    curl -fsSL -o /tmp/helm.tar.gz \
+      "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz"
+    tar -xzf /tmp/helm.tar.gz -C /tmp
+    mv /tmp/linux-amd64/helm /usr/local/bin/helm
+    chmod +x /usr/local/bin/helm
+    rm -rf /tmp/helm.tar.gz /tmp/linux-amd64
+  }
+fi
+
+if ! command -v gomplate &>/dev/null; then
+  GOMPLATE_VERSION="v3.11.7"
+  curl -fsSL -o /usr/local/bin/gomplate \
+    "https://github.com/hairyhenderson/gomplate/releases/download/${GOMPLATE_VERSION}/gomplate_linux-amd64"
+  chmod +x /usr/local/bin/gomplate
+fi

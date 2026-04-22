@@ -1,0 +1,106 @@
+#!/bin/bash
+set -euo pipefail
+
+# ---------------------------------------------------------------------------
+# build_context — Extracts variables from the NP notification context and
+# prepares the execution environment for service actions.
+#
+# For link actions, also extracts LINK_* variables consumed by
+# build_user_context in the next workflow step.
+# ---------------------------------------------------------------------------
+
+# --- Parse service context --------------------------------------------------
+
+SERVICE_ID=$(echo "$CONTEXT" | jq -r '.service.id')
+SERVICE_SLUG=$(echo "$CONTEXT" | jq -r '.service.slug // .service.specification.slug // ""')
+APPLICATION_ID=$(echo "$CONTEXT" | jq -r '.tags.application_id // ""')
+
+# PROJECT identifies this service instance on the cluster (helm release name,
+# secret name, PVC prefix, etc.). Kept as <slug>-<application_id> for
+# backward compatibility with existing releases — changing the scheme would
+# orphan every running instance.
+if [ -z "$SERVICE_SLUG" ] || [ -z "$APPLICATION_ID" ]; then
+  echo "ERROR: cannot derive PROJECT. service.slug='$SERVICE_SLUG' tags.application_id='$APPLICATION_ID'" >&2
+  exit 1
+fi
+
+export PROJECT="${SERVICE_SLUG}-${APPLICATION_ID}"
+
+# Merge .service.attributes with action .parameters.
+# CRITICAL: on the first "create" action, .service.attributes is empty or
+# incomplete. The user-provided values are in .parameters. jq's * operator
+# merges objects with the right-hand side taking precedence.
+SERVICE_ATTRS=$(echo "$CONTEXT" | jq -r '(.service.attributes // {}) * (.parameters // {})')
+
+USAGE_TYPE=$(echo "$SERVICE_ATTRS" | jq -r '.usage_type // "app"')
+PII=$(echo "$SERVICE_ATTRS"        | jq -r '.pii // false')
+
+export SERVICE_ID
+export SERVICE_SLUG
+export APPLICATION_ID
+export USAGE_TYPE
+export PII
+
+# --- Derived identifiers (deterministic, reproducible across runs) ----------
+
+export NAMESPACE="postgres-db"
+export DB_NAME="${USAGE_TYPE}_db"
+export HELM_RELEASE_NAME="${PROJECT}-postgres"
+export SECRET_NAME="${PROJECT}-postgres-credentials"
+
+# --- Read static config from values.yaml ------------------------------------
+# CRITICAL: $VALUES is a FILE PATH set by "np service workflow exec --values <path>",
+# NOT JSON content. Use yaml_value() to read individual keys.
+yaml_value() {
+  local key="$1" default="$2" file="$3"
+  local val
+  val=$(grep "^${key}:" "$file" 2>/dev/null | sed 's/^[^:]*: *//;s/^"//;s/"$//' | head -1)
+  echo "${val:-$default}"
+}
+
+if [ -n "${VALUES:-}" ] && [ -f "$VALUES" ]; then
+  export CHART_REPO=$(yaml_value    "chart_repo"    "https://charts.bitnami.com/bitnami" "$VALUES")
+  export CHART_NAME=$(yaml_value    "chart_name"    "bitnami/postgresql"                 "$VALUES")
+  export CHART_VERSION=$(yaml_value "chart_version" ""                                   "$VALUES")
+  export NAMESPACE=$(yaml_value     "namespace"     "$NAMESPACE"                         "$VALUES")
+else
+  export CHART_REPO="https://charts.bitnami.com/bitnami"
+  export CHART_NAME="bitnami/postgresql"
+  export CHART_VERSION=""
+fi
+
+# --- Working directory for rendered helm values, query output, etc. --------
+
+export OUTPUT_DIR="/tmp/np-service-${SERVICE_ID}"
+mkdir -p "$OUTPUT_DIR"
+
+# --- Extract link context (link workflows only) -----------------------------
+# Consumed by build_user_context in the next workflow step.
+
+if [ "${ACTION_SOURCE:-}" = "link" ]; then
+  export LINK_ID=$(echo "$CONTEXT"   | jq -r '.link.id       // ""')
+  export LINK_NAME=$(echo "$CONTEXT" | jq -r '.link.name     // ""')
+  export SCOPE_ID=$(echo "$CONTEXT"  | jq -r '.link.scope.id // ""')
+  export SCOPE_NRN=$(echo "$CONTEXT" | jq -r '.link.scope.nrn // ""')
+
+  LINK_ATTRS=$(echo "$CONTEXT" | jq -r '(.link.attributes // {}) * (.parameters // {})')
+  export LINK_USERNAME=$(echo "$LINK_ATTRS"   | jq -r '.username         // ""')
+  export LINK_PERM_READ=$(echo "$LINK_ATTRS"  | jq -r '.permisions.read  // true')
+  export LINK_PERM_WRITE=$(echo "$LINK_ATTRS" | jq -r '.permisions.write // false')
+  export LINK_PERM_ADMIN=$(echo "$LINK_ATTRS" | jq -r '.permisions.admin // false')
+
+  export OUTPUT_DIR="/tmp/np-link-${LINK_ID}"
+  mkdir -p "$OUTPUT_DIR"
+fi
+
+echo "Context built:"
+echo "  SERVICE_ID=$SERVICE_ID"
+echo "  PROJECT=$PROJECT"
+echo "  NAMESPACE=$NAMESPACE"
+echo "  HELM_RELEASE_NAME=$HELM_RELEASE_NAME"
+echo "  SECRET_NAME=$SECRET_NAME"
+echo "  DB_NAME=$DB_NAME"
+echo "  USAGE_TYPE=$USAGE_TYPE"
+echo "  PII=$PII"
+echo "  OUTPUT_DIR=$OUTPUT_DIR"
+[ "${ACTION_SOURCE:-}" = "link" ] && echo "  LINK_ID=$LINK_ID"

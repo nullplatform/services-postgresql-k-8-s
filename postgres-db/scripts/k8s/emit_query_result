@@ -1,0 +1,31 @@
+#!/bin/bash
+set -euo pipefail
+
+# ---------------------------------------------------------------------------
+# emit_query_result — Publishes the captured pod stdout (at $QUERY_OUTPUT_FILE)
+# back to the nullplatform action via "np service action update --results".
+#
+# For DML SELECT queries, the pod output is already JSON (wrapped by
+# validate_query_type), so we pass it through. For everything else we wrap
+# the raw text into a string field.
+# ---------------------------------------------------------------------------
+
+: "${QUERY_OUTPUT_FILE:?QUERY_OUTPUT_FILE is required}"
+
+if [ ! -f "$QUERY_OUTPUT_FILE" ]; then
+  echo "WARNING: $QUERY_OUTPUT_FILE is missing. Emitting empty result."
+  np service action update --results '{"results": ""}'
+  exit 0
+fi
+
+if [ "${IS_SELECT_QUERY:-false}" = "true" ]; then
+  JSON=$(jq -r . "$QUERY_OUTPUT_FILE")
+  np service action update --results "{\"results\": $JSON}"
+else
+  ENCODED=$(printf '%s' "$(cat "$QUERY_OUTPUT_FILE")" | jq -Rs .)
+  if [ "${QUERY_TYPE:-dml}" = "ddl" ]; then
+    np service action update --results "{\"results\": $ENCODED}"
+  else
+    np service action update --results "{\"textresult\": $ENCODED}"
+  fi
+fi
