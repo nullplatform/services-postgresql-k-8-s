@@ -15,6 +15,14 @@ This repository packages the full lifecycle of a PostgreSQL database as a nullpl
 | Category       | Database / Relational  |
 | Helm chart     | `bitnami/postgresql`   |
 
+## Cluster Prerequisites
+
+The Kubernetes cluster where this service runs must have:
+
+- A **default `StorageClass`** — the chart requests a `PersistentVolumeClaim` without specifying `storageClassName`. Without a default, the postgres pod will stay `Pending` forever.
+- A **running CSI driver** backing that StorageClass, with IAM permissions to create volumes in your cloud. Managed Kubernetes offerings don't all ship one by default (notably AWS EKS requires the `aws-ebs-csi-driver` addon).
+- An **nullplatform agent** with RBAC to create `ConfigMap`, `Secret` and `Pod` resources in the `postgres-db` namespace, and to install Helm releases there (the standard agent chart already grants these).
+
 ## Architecture
 
 ```
