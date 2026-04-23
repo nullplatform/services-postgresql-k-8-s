@@ -65,16 +65,16 @@
         "k8s_secret_name": {
           "type": "string",
           "export": false,
-          "visibleOn": [],
+          "visibleOn": ["read"],
           "editableOn": [],
-          "description": "Internal: name of the K8s secret holding admin credentials."
+          "description": "Internal: name of the K8s secret holding admin credentials (needed by link workflows to fetch the admin password)."
         },
         "helm_release_name": {
           "type": "string",
           "export": false,
-          "visibleOn": [],
+          "visibleOn": ["read"],
           "editableOn": [],
-          "description": "Internal: Helm release name for this service instance."
+          "description": "Internal: Helm release name for this service instance (needed by lifecycle scripts)."
         }
       }
     },
