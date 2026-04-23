@@ -103,4 +103,6 @@ echo "  DB_NAME=$DB_NAME"
 echo "  USAGE_TYPE=$USAGE_TYPE"
 echo "  PII=$PII"
 echo "  OUTPUT_DIR=$OUTPUT_DIR"
-[ "${ACTION_SOURCE:-}" = "link" ] && echo "  LINK_ID=$LINK_ID"
+if [ "${ACTION_SOURCE:-}" = "link" ]; then
+  echo "  LINK_ID=$LINK_ID"
+fi
