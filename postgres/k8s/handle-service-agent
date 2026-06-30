@@ -8,6 +8,12 @@ if [ -n "${NP_API_KEY:-}" ] && [ -z "${NULLPLATFORM_API_KEY:-}" ]; then
   export NULLPLATFORM_API_KEY="$NP_API_KEY"
 fi
 
+# The channel delivers NP_ACTION_CONTEXT wrapped in single quotes
+# ('${NOTIFICATION_CONTEXT}'). Strip them, otherwise `np service-action exec`
+# fails parsing the JSON with: invalid character ''' looking for beginning of value
+NP_ACTION_CONTEXT=$(echo "$NP_ACTION_CONTEXT" | sed "s/^'//;s/'$//")
+export NP_ACTION_CONTEXT
+
 echo "Starting handle agent service"
 
 np service-action exec --live-output --live-report --debug
