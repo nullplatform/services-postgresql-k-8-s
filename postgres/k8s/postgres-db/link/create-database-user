@@ -12,7 +12,8 @@ SERVICE_DBNAME=$ACTION_SERVICE_ATTRIBUTES_DBNAME
 SECRET_NAME=$ACTION_SERVICE_ATTRIBUTES_K_8_S_SECRET_NAME
 
 # Get link parameters
-export DB_USERNAME="usr$(uuidgen | tr -d "-")"
+# Lowercase: unquoted SQL identifiers are folded to lowercase by Postgres
+export DB_USERNAME="usr$(uuidgen | tr -d '-' | tr '[:upper:]' '[:lower:]')"
 USER_TYPE=$ACTION_PARAMETERS_USER_TYPE
 GENERATED_PASSWORD=pwd"$(uuidgen)"
 
