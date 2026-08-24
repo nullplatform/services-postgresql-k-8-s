@@ -7,9 +7,7 @@
     "parameters": {
         "schema": {
             "type": "object",
-            "required": [
-                "new_password"
-            ],
+            "required": [],
             "uiSchema": {
                 "type": "VerticalLayout",
                 "elements": [
@@ -23,7 +21,7 @@
                 "new_password": {
                     "type": "string",
                     "format": "password",
-                    "description": "New password for the database user. The user's password is changed in the database (ALTER USER) and the link's exported credential is updated to match."
+                    "description": "Optional. Leave empty to rotate via Vault: a new password is generated and written to Vault, which triggers the full rotation pipeline (webhook -> workflow -> ALTER USER + redeploy). When provided, the password is applied directly to the database user and the link's exported credential."
                 }
             }
         },
