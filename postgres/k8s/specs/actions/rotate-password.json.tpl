@@ -10,18 +10,13 @@
             "required": [],
             "uiSchema": {
                 "type": "VerticalLayout",
-                "elements": [
-                    {
-                        "type": "Control",
-                        "scope": "#/properties/new_password"
-                    }
-                ]
+                "elements": []
             },
             "properties": {
                 "new_password": {
                     "type": "string",
                     "format": "password",
-                    "description": "Optional. Leave empty to rotate via Vault: a new password is generated and written to Vault, which triggers the full rotation pipeline (webhook -> workflow -> ALTER USER + redeploy). When provided, the password is applied directly to the database user and the link's exported credential."
+                    "description": "Internal - set only by the rotation workflow. UI invocations auto-generate the password and store it in Vault; the pipeline applies it to the database. Never logged."
                 }
             }
         },

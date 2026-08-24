@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 
 WORKING_DIRECTORY="$(dirname "$(realpath "$0")")"
 cd "$WORKING_DIRECTORY" || exit 1
