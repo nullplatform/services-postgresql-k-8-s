@@ -41,7 +41,13 @@
                     "type": "boolean"
                 },
                 "username": {
-                    "type": "string"
+                    "type": "string",
+                    "target": "username"
+                },
+                "password": {
+                    "type": "string",
+                    "secret": true,
+                    "target": "password"
                 }
             }
         },
