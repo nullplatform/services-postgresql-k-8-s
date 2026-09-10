@@ -1,0 +1,41 @@
+steps:
+  - name: build context
+    type: script
+    file: $SERVICE_PATH/scripts/k8s/build_context
+    output:
+      - name: NAMESPACE
+        type: environment
+      - name: OUTPUT_DIR
+        type: environment
+
+  - name: validate query type
+    type: script
+    file: $SERVICE_PATH/scripts/k8s/validate_query_type
+    configuration:
+      QUERY_TYPE: dml
+    output:
+      - name: QUERY
+        type: environment
+      - name: QUERY_TYPE
+        type: environment
+      - name: IS_SELECT_QUERY
+        type: environment
+
+  - name: run query
+    type: script
+    file: $SERVICE_PATH/scripts/k8s/run_admin_query
+    output:
+      - name: SERVICE_HOSTNAME
+        type: environment
+      - name: SERVICE_PORT
+        type: environment
+      - name: SERVICE_DBNAME
+        type: environment
+      - name: ADMIN_PASSWORD
+        type: environment
+      - name: QUERY_OUTPUT_FILE
+        type: environment
+
+  - name: emit result
+    type: script
+    file: $SERVICE_PATH/scripts/k8s/emit_query_result

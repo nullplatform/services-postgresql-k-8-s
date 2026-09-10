@@ -1,0 +1,104 @@
+#!/bin/bash
+set -euo pipefail
+
+# ---------------------------------------------------------------------------
+# do_helm — Engine step for lifecycle workflows (create/update/delete).
+# Analogue of s3's do_tofu: runs the provisioning engine using env
+# variables set by build_context.
+#
+# Expected environment variables (set by build_context):
+#   OUTPUT_DIR, PROJECT, NAMESPACE, HELM_RELEASE_NAME, SECRET_NAME,
+#   DB_NAME, USAGE_TYPE, PII, CHART_REPO, CHART_NAME, CHART_VERSION,
+#   SERVICE_PATH (set by entrypoint)
+#
+# Set by the workflow YAML configuration block:
+#   HELM_ACTION — "install" | "upgrade" | "uninstall"
+# ---------------------------------------------------------------------------
+
+HELM_ACTION="${HELM_ACTION:-install}"
+
+"$SERVICE_PATH/scripts/k8s/ensure_tools"
+
+case "$HELM_ACTION" in
+  install|upgrade)
+    helm repo add bitnami "$CHART_REPO" 2>/dev/null || true
+    helm repo update
+
+    # Ensure namespace exists (idempotent).
+    kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
+
+    # On first install: generate admin password and create/update the secret.
+    # On upgrade: reuse the existing secret so credentials are stable.
+    if ! kubectl get secret "$SECRET_NAME" -n "$NAMESPACE" >/dev/null 2>&1; then
+      echo "Creating admin credentials secret $SECRET_NAME..."
+      POSTGRES_PASSWORD=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-25)
+      kubectl create secret generic "$SECRET_NAME" \
+        --from-literal=postgres-password="$POSTGRES_PASSWORD" \
+        --from-literal=username=postgres \
+        --from-literal=password="$POSTGRES_PASSWORD" \
+        --from-literal=database="$DB_NAME" \
+        -n "$NAMESPACE"
+    else
+      echo "Reusing existing secret $SECRET_NAME (upgrade path)."
+    fi
+
+    # Render helm values template.
+    cat > "$OUTPUT_DIR/gomplate-context.json" <<EOF
+{"projectName":"$PROJECT","usageType":"$USAGE_TYPE","piiEnabled":$PII,"dbName":"$DB_NAME"}
+EOF
+
+    gomplate \
+      --context ".=$OUTPUT_DIR/gomplate-context.json" \
+      -f "$SERVICE_PATH/values.yaml.tpl" \
+      -o "$OUTPUT_DIR/values.yaml"
+
+    # Assemble helm upgrade --install invocation.
+    HELM_CMD=(helm upgrade --install "$HELM_RELEASE_NAME" "$CHART_NAME"
+              -n "$NAMESPACE"
+              -f "$OUTPUT_DIR/values.yaml"
+              --create-namespace
+              --wait
+              --timeout 10m)
+    if [ -n "${CHART_VERSION:-}" ]; then
+      HELM_CMD+=(--version "$CHART_VERSION")
+    fi
+
+    echo "Running: ${HELM_CMD[*]}"
+    "${HELM_CMD[@]}"
+
+    # Wait for the service to expose a cluster IP and the pod to be ready.
+    echo "Waiting for PostgreSQL service ClusterIP..."
+    SERVICE_IP=""
+    for attempt in $(seq 1 60); do
+      SERVICE_IP=$(kubectl get svc "$HELM_RELEASE_NAME" -n "$NAMESPACE" -o jsonpath='{.spec.clusterIP}' 2>/dev/null || true)
+      if [ -n "$SERVICE_IP" ] && [ "$SERVICE_IP" != "None" ]; then
+        break
+      fi
+      echo "  attempt $attempt/60 — waiting..."
+      sleep 5
+    done
+
+    if [ -z "$SERVICE_IP" ] || [ "$SERVICE_IP" = "None" ]; then
+      echo "ERROR: service $HELM_RELEASE_NAME in ns $NAMESPACE never exposed a ClusterIP" >&2
+      exit 1
+    fi
+
+    kubectl wait --for=condition=ready pod \
+      -l "app.kubernetes.io/instance=$HELM_RELEASE_NAME" \
+      -n "$NAMESPACE" --timeout=300s
+
+    export SERVICE_IP
+    export SERVICE_PORT=5432
+    echo "PostgreSQL ready at $SERVICE_IP:$SERVICE_PORT"
+    ;;
+
+  uninstall)
+    helm uninstall "$HELM_RELEASE_NAME" -n "$NAMESPACE" || true
+    echo "Helm release $HELM_RELEASE_NAME uninstalled (or already absent)."
+    ;;
+
+  *)
+    echo "ERROR: unknown HELM_ACTION='$HELM_ACTION' (expected install|upgrade|uninstall)" >&2
+    exit 1
+    ;;
+esac

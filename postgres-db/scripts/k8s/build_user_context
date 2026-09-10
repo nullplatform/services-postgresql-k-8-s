@@ -1,0 +1,55 @@
+#!/bin/bash
+set -euo pipefail
+
+# ---------------------------------------------------------------------------
+# build_user_context — Runs AFTER build_context for link workflows.
+# Resolves the target service (hostname, admin secret) and decides the
+# database user + password this workflow will operate on.
+#
+# For create: generates a new username + password.
+# For update/delete: reuses the username persisted on the link.
+# ---------------------------------------------------------------------------
+
+"$SERVICE_PATH/scripts/k8s/ensure_tools"
+
+SERVICE_ATTRS=$(echo "$CONTEXT" | jq -r '.service.attributes // {}')
+
+export SERVICE_HOSTNAME=$(echo "$SERVICE_ATTRS" | jq -r '.hostname         // ""')
+export SERVICE_PORT=$(echo    "$SERVICE_ATTRS" | jq -r '.port             // 5432')
+export SERVICE_DBNAME=$(echo  "$SERVICE_ATTRS" | jq -r '.dbname           // ""')
+SERVICE_SECRET_NAME=$(echo    "$SERVICE_ATTRS" | jq -r '.k8s_secret_name  // ""')
+
+if [ -z "$SERVICE_HOSTNAME" ] || [ -z "$SERVICE_DBNAME" ] || [ -z "$SERVICE_SECRET_NAME" ]; then
+  echo "ERROR: service attributes incomplete — hostname='$SERVICE_HOSTNAME' dbname='$SERVICE_DBNAME' k8s_secret_name='$SERVICE_SECRET_NAME'" >&2
+  echo "       has the service create workflow completed (write_service_outputs)?" >&2
+  exit 1
+fi
+
+# Admin password lives on the cluster, not in the context — this is the
+# secret that do_helm created on first install.
+export ADMIN_PASSWORD=$(kubectl get secret "$SERVICE_SECRET_NAME" -n "$NAMESPACE" \
+  -o jsonpath='{.data.postgres-password}' | base64 -d)
+
+if [ -z "$ADMIN_PASSWORD" ]; then
+  echo "ERROR: could not read postgres-password from secret $SERVICE_SECRET_NAME" >&2
+  exit 1
+fi
+
+# --- Choose username / password depending on action -------------------------
+# On create: brand new username + password.
+# On update/delete: reuse what's persisted on the link.
+
+if [ -n "${LINK_USERNAME:-}" ]; then
+  export DB_USERNAME="$LINK_USERNAME"
+  # Password is not needed for update (GRANT/REVOKE) or delete (DROP USER).
+  export DB_PASSWORD=""
+  echo "Reusing existing link user $DB_USERNAME"
+else
+  export DB_USERNAME="usr$(uuidgen | tr -d '-')"
+  export DB_PASSWORD="pwd$(uuidgen)"
+  echo "Generated new link user $DB_USERNAME"
+fi
+
+echo "Context ready:"
+echo "  SERVICE_HOSTNAME=$SERVICE_HOSTNAME SERVICE_PORT=$SERVICE_PORT SERVICE_DBNAME=$SERVICE_DBNAME"
+echo "  DB_USERNAME=$DB_USERNAME"

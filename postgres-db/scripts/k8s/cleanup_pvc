@@ -1,0 +1,31 @@
+#!/bin/bash
+set -euo pipefail
+
+# ---------------------------------------------------------------------------
+# cleanup_pvc — Post-uninstall cleanup. Equivalent role to s3's
+# delete_tfstate_bucket, but for the K8s resources that Helm does not delete
+# by default (PVCs, bound PVs, credential secret).
+#
+# Expected environment variables (set by build_context):
+#   PROJECT, NAMESPACE, SECRET_NAME
+# ---------------------------------------------------------------------------
+
+echo "Cleaning up PVC for $PROJECT-postgres..."
+kubectl delete pvc "data-$PROJECT-postgres-0" -n "$NAMESPACE" --ignore-not-found=true
+
+# Find and delete the PV that was bound to this PVC (some storage classes
+# use Retain and leave the PV behind).
+PV_NAME=$(kubectl get pv -o json 2>/dev/null \
+  | jq -r --arg ns "$NAMESPACE" --arg pvc "data-$PROJECT-postgres-0" \
+      '.items[] | select(.spec.claimRef.name == $pvc and .spec.claimRef.namespace == $ns) | .metadata.name' \
+  || true)
+
+if [ -n "$PV_NAME" ]; then
+  echo "Deleting persistent volume: $PV_NAME"
+  kubectl delete pv "$PV_NAME" --ignore-not-found=true || true
+fi
+
+echo "Deleting credentials secret $SECRET_NAME..."
+kubectl delete secret "$SECRET_NAME" -n "$NAMESPACE" --ignore-not-found=true
+
+echo "PostgreSQL service resources cleaned up."

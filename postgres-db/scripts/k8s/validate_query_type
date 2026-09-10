@@ -1,0 +1,54 @@
+#!/bin/bash
+set -euo pipefail
+
+# ---------------------------------------------------------------------------
+# validate_query_type — Asserts that $QUERY matches the expected $QUERY_TYPE.
+# Used by run-ddl-query and run-dml-query workflows to reject queries of the
+# wrong type before spinning up an expensive client pod.
+#
+# Expected environment variables:
+#   QUERY_TYPE — "ddl" or "dml"
+#   QUERY      — the user-supplied SQL
+# ---------------------------------------------------------------------------
+
+# Re-export NP action parameters. The original query may contain multi-line
+# or special characters that the agent has base64-ish encoded; this puts
+# ACTION_PARAMETERS_QUERY back into the environment in decoded form.
+eval "echo $(np service-action export-action-data --format bash --bash-prefix ACTION)" >/dev/null
+
+: "${QUERY_TYPE:?QUERY_TYPE is required (ddl or dml)}"
+: "${ACTION_PARAMETERS_QUERY:?ACTION_PARAMETERS_QUERY is required}"
+
+QUERY="$ACTION_PARAMETERS_QUERY"
+export QUERY
+
+DDL_PATTERN='^\s*(CREATE|ALTER|DROP|TRUNCATE)'
+
+case "$QUERY_TYPE" in
+  ddl)
+    if ! echo "$QUERY" | grep -iE "$DDL_PATTERN" >/dev/null; then
+      ERROR_MSG="Only DDL queries (CREATE, ALTER, DROP, TRUNCATE) are allowed in this action. Use run-dml-query for SELECT/INSERT/UPDATE/DELETE."
+      np service action update --results "{\"error\": \"$ERROR_MSG\", \"results\": \"\"}"
+      exit 1
+    fi
+    ;;
+  dml)
+    if echo "$QUERY" | grep -iE "$DDL_PATTERN" >/dev/null; then
+      ERROR_MSG="DDL queries are not allowed in DML action. Use run-ddl-query instead."
+      np service action update --results "{\"error\": \"$ERROR_MSG\"}"
+      exit 1
+    fi
+    # Wrap SELECT statements so the pod emits valid JSON.
+    if echo "$QUERY" | grep -iE '^\s*SELECT' >/dev/null; then
+      QUERY="SELECT json_agg(row_to_json(t)) FROM ($QUERY) t;"
+      export IS_SELECT_QUERY=true
+    fi
+    ;;
+  *)
+    echo "ERROR: unknown QUERY_TYPE='$QUERY_TYPE'" >&2
+    exit 1
+    ;;
+esac
+
+export QUERY
+echo "Query validated (type=$QUERY_TYPE, is_select=${IS_SELECT_QUERY:-false})."

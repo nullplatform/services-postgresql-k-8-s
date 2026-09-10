@@ -1,0 +1,17 @@
+# Postgres DB Service — Static Configuration
+# These values are not exposed in the NP UI. They configure the execution
+# environment for the agent running this service.
+#
+# NOTE: In scripts, $VALUES is a FILE PATH (set by "np service workflow exec
+# --values"). It is NOT JSON content. Read values with yaml_value() from
+# scripts/k8s/build_context.
+
+# Kubernetes namespace where PostgreSQL instances are provisioned.
+namespace: "postgres-db"
+
+# Bitnami PostgreSQL Helm chart configuration.
+chart_repo: "https://charts.bitnami.com/bitnami"
+chart_name: "bitnami/postgresql"
+
+# Pin the chart version if reproducibility matters. Empty = latest.
+chart_version: ""

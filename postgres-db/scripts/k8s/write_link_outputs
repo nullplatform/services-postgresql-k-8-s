@@ -1,0 +1,38 @@
+#!/bin/bash
+set -euo pipefail
+
+# ---------------------------------------------------------------------------
+# write_link_outputs — Persists link attributes after a successful
+# link / link-update workflow. Reads values exported by build_user_context
+# and run_query, and calls "np link patch".
+#
+# Fields with "export: environment_variable" become env vars (plain).
+# Fields with "export: {..., secret: true}" are encrypted at rest but
+# injected as env vars at runtime.
+# ---------------------------------------------------------------------------
+
+LINK_ID_VAL=$(echo "$CONTEXT" | jq -r '.link.id')
+
+if [ -z "${DB_USERNAME:-}" ]; then
+  echo "ERROR: DB_USERNAME not set. Expected to be exported by build_user_context." >&2
+  exit 1
+fi
+
+ATTRS=$(jq -n \
+  --arg username  "$DB_USERNAME" \
+  --arg password  "${DB_PASSWORD:-}" \
+  --argjson read  "${LINK_PERM_READ:-true}" \
+  --argjson write "${LINK_PERM_WRITE:-false}" \
+  --argjson admin "${LINK_PERM_ADMIN:-false}" \
+  '{
+    username: $username,
+    password: $password,
+    permisions: {read: $read, write: $write, admin: $admin}
+  }')
+
+echo "Updating link $LINK_ID_VAL attributes:"
+echo "  username=$DB_USERNAME password=****"
+echo "  permisions: read=${LINK_PERM_READ:-true} write=${LINK_PERM_WRITE:-false} admin=${LINK_PERM_ADMIN:-false}"
+
+np link patch --id "$LINK_ID_VAL" --body "{\"attributes\": $ATTRS}"
+echo "Link attributes updated successfully."

@@ -1,0 +1,50 @@
+steps:
+  - name: build context
+    type: script
+    file: $SERVICE_PATH/scripts/k8s/build_context
+    output:
+      - name: NAMESPACE
+        type: environment
+      - name: LINK_ID
+        type: environment
+      - name: LINK_NAME
+        type: environment
+      - name: LINK_USERNAME
+        type: environment
+      - name: LINK_PERM_READ
+        type: environment
+      - name: LINK_PERM_WRITE
+        type: environment
+      - name: LINK_PERM_ADMIN
+        type: environment
+      - name: OUTPUT_DIR
+        type: environment
+
+  - name: build user context
+    type: script
+    file: $SERVICE_PATH/scripts/k8s/build_user_context
+    output:
+      - name: SERVICE_HOSTNAME
+        type: environment
+      - name: SERVICE_PORT
+        type: environment
+      - name: SERVICE_DBNAME
+        type: environment
+      - name: ADMIN_PASSWORD
+        type: environment
+      - name: DB_USERNAME
+        type: environment
+      - name: DB_PASSWORD
+        type: environment
+
+  - name: create db user
+    type: script
+    file: $SERVICE_PATH/scripts/k8s/create_db_user
+
+  - name: grant permissions
+    type: script
+    file: $SERVICE_PATH/scripts/k8s/set_db_user_permissions
+
+  - name: write link outputs
+    type: script
+    file: $SERVICE_PATH/scripts/k8s/write_link_outputs

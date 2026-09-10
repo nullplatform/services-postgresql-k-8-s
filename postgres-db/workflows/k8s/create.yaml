@@ -1,0 +1,42 @@
+steps:
+  - name: build context
+    type: script
+    file: $SERVICE_PATH/scripts/k8s/build_context
+    output:
+      - name: PROJECT
+        type: environment
+      - name: NAMESPACE
+        type: environment
+      - name: DB_NAME
+        type: environment
+      - name: USAGE_TYPE
+        type: environment
+      - name: PII
+        type: environment
+      - name: HELM_RELEASE_NAME
+        type: environment
+      - name: SECRET_NAME
+        type: environment
+      - name: CHART_REPO
+        type: environment
+      - name: CHART_NAME
+        type: environment
+      - name: CHART_VERSION
+        type: environment
+      - name: OUTPUT_DIR
+        type: environment
+
+  - name: helm install
+    type: script
+    file: $SERVICE_PATH/scripts/k8s/do_helm
+    configuration:
+      HELM_ACTION: install
+    output:
+      - name: SERVICE_IP
+        type: environment
+      - name: SERVICE_PORT
+        type: environment
+
+  - name: write service outputs
+    type: script
+    file: $SERVICE_PATH/scripts/k8s/write_service_outputs

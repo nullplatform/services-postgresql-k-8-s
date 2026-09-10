@@ -1,0 +1,39 @@
+#!/bin/bash
+set -euo pipefail
+
+# ---------------------------------------------------------------------------
+# write_service_outputs — Persists the service attributes set during the
+# create/update workflow. Reads the values exported by do_helm and calls
+# "np service patch".
+#
+# Fields with "export: true" in the service spec (hostname, port, dbname)
+# become env vars in apps when a link is activated.
+# ---------------------------------------------------------------------------
+
+SERVICE_ID=$(echo "$CONTEXT" | jq -r '.service.id')
+
+if [ -z "${SERVICE_IP:-}" ]; then
+  echo "ERROR: SERVICE_IP not set. Expected to be exported by do_helm." >&2
+  exit 1
+fi
+
+ATTRS=$(jq -n \
+  --arg hostname          "$SERVICE_IP" \
+  --argjson port           ${SERVICE_PORT:-5432} \
+  --arg dbname            "$DB_NAME" \
+  --arg k8s_secret_name   "$SECRET_NAME" \
+  --arg helm_release_name "$HELM_RELEASE_NAME" \
+  '{
+    hostname:          $hostname,
+    port:              $port,
+    dbname:            $dbname,
+    k8s_secret_name:   $k8s_secret_name,
+    helm_release_name: $helm_release_name
+  }')
+
+echo "Updating service $SERVICE_ID attributes:"
+echo "  hostname=$SERVICE_IP port=${SERVICE_PORT:-5432} dbname=$DB_NAME"
+echo "  k8s_secret_name=$SECRET_NAME helm_release_name=$HELM_RELEASE_NAME"
+
+np service patch --id "$SERVICE_ID" --body "{\"attributes\": $ATTRS}"
+echo "Service attributes updated successfully."

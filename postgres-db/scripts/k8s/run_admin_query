@@ -1,0 +1,36 @@
+#!/bin/bash
+set -euo pipefail
+
+# ---------------------------------------------------------------------------
+# run_admin_query — Runs a query against the service database as the
+# postgres admin user. Used by run-ddl-query / run-dml-query workflows
+# AFTER validate_query_type has populated $QUERY.
+#
+# Differs from run_query in that it reads the admin credentials off the
+# service-managed secret (write access is not needed for read queries but
+# the admin user always has it).
+# ---------------------------------------------------------------------------
+
+"$SERVICE_PATH/scripts/k8s/ensure_tools"
+
+SERVICE_ATTRS=$(echo "$CONTEXT" | jq -r '.service.attributes // {}')
+
+export SERVICE_HOSTNAME=$(echo "$SERVICE_ATTRS" | jq -r '.hostname        // ""')
+export SERVICE_PORT=$(echo    "$SERVICE_ATTRS" | jq -r '.port            // 5432')
+export SERVICE_DBNAME=$(echo  "$SERVICE_ATTRS" | jq -r '.dbname          // ""')
+SERVICE_SECRET_NAME=$(echo    "$SERVICE_ATTRS" | jq -r '.k8s_secret_name // ""')
+
+if [ -z "$SERVICE_HOSTNAME" ] || [ -z "$SERVICE_DBNAME" ] || [ -z "$SERVICE_SECRET_NAME" ]; then
+  echo "ERROR: service attributes incomplete — hostname='$SERVICE_HOSTNAME' dbname='$SERVICE_DBNAME' k8s_secret_name='$SERVICE_SECRET_NAME'" >&2
+  exit 1
+fi
+
+export ADMIN_PASSWORD=$(kubectl get secret "$SERVICE_SECRET_NAME" -n "$NAMESPACE" \
+  -o jsonpath='{.data.postgres-password}' | base64 -d)
+
+ACTION_ID=$(echo "$CONTEXT" | jq -r '.action_id // .id // ""')
+export QUERY_OUTPUT_FILE="/tmp/query-output-${ACTION_ID:-$RANDOM}.txt"
+
+"$SERVICE_PATH/scripts/k8s/run_query"
+
+export QUERY_OUTPUT_FILE

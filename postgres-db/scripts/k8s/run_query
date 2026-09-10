@@ -1,0 +1,27 @@
+#!/bin/bash
+set -euo pipefail
+
+# ---------------------------------------------------------------------------
+# run_query — Generic wrapper around run_query_in_pod.sh.
+#
+# Expected environment variables:
+#   SERVICE_HOSTNAME, SERVICE_PORT, SERVICE_DBNAME, ADMIN_PASSWORD,
+#   NAMESPACE, QUERY
+#
+# Optional:
+#   QUERY_TYPE        — "ddl" | "dml" (default: "dml")
+#   QUERY_OUTPUT_FILE — path to capture stdout of the psql pod
+# ---------------------------------------------------------------------------
+
+: "${SERVICE_HOSTNAME:?SERVICE_HOSTNAME is required}"
+: "${SERVICE_DBNAME:?SERVICE_DBNAME is required}"
+: "${ADMIN_PASSWORD:?ADMIN_PASSWORD is required}"
+: "${QUERY:?QUERY is required}"
+
+SERVICE_PORT="${SERVICE_PORT:-5432}"
+QUERY_TYPE="${QUERY_TYPE:-dml}"
+
+"$SERVICE_PATH/scripts/k8s/run_query_in_pod.sh" \
+  "$SERVICE_HOSTNAME" "$SERVICE_PORT" "$SERVICE_DBNAME" \
+  "postgres" "$ADMIN_PASSWORD" "$QUERY" "$QUERY_TYPE" \
+  "${QUERY_OUTPUT_FILE:-}"
