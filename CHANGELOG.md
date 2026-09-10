@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.2](https://github.com/nullplatform/services-postgresql-k-8-s/compare/v1.0.1...v1.0.2) (2026-09-10)
+
+
+### Bug Fixes
+
+* accept a trailing semicolon in SELECT queries and report empty results ([f7aa9c2](https://github.com/nullplatform/services-postgresql-k-8-s/commit/f7aa9c23c42aa2ff8b491e09e8a42294eab0bd93))
+* accept a trailing semicolon in SELECT queries and report empty results ([3605a2e](https://github.com/nullplatform/services-postgresql-k-8-s/commit/3605a2e7dc9e4d69f155eaa47e55a41b13973c4b))
+
 ## [1.0.1](https://github.com/nullplatform/services-postgresql-k-8-s/compare/v1.0.0...v1.0.1) (2026-09-10)
 
 
