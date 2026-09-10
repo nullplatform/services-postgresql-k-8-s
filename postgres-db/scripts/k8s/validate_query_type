@@ -38,8 +38,12 @@ case "$QUERY_TYPE" in
       np service action update --results "{\"error\": \"$ERROR_MSG\"}"
       exit 1
     fi
-    # Wrap SELECT statements so the pod emits valid JSON.
+    # Wrap SELECT statements so the pod emits valid JSON. Strip trailing
+    # whitespace and semicolons first: a ";" inside the subquery is a syntax
+    # error, psql prints nothing and emit_query_result fails parsing an empty
+    # result.
     if echo "$QUERY" | grep -iE '^\s*SELECT' >/dev/null; then
+      QUERY=$(printf '%s' "$QUERY" | sed -E 's/[[:space:];]+$//')
       QUERY="SELECT json_agg(row_to_json(t)) FROM ($QUERY) t;"
       export IS_SELECT_QUERY=true
     fi
