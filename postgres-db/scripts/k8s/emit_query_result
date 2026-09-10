@@ -19,7 +19,13 @@ if [ ! -f "$QUERY_OUTPUT_FILE" ]; then
 fi
 
 if [ "${IS_SELECT_QUERY:-false}" = "true" ]; then
-  JSON=$(jq -r . "$QUERY_OUTPUT_FILE")
+  # psql prints nothing when the wrapped SELECT fails; surface that instead
+  # of a jq parse error on an empty file.
+  if ! JSON=$(jq -r . "$QUERY_OUTPUT_FILE" 2>/dev/null) || [ -z "$JSON" ]; then
+    echo "ERROR: the SELECT produced no JSON result; psql output was: $(cat "$QUERY_OUTPUT_FILE")" >&2
+    np service action update --results '{"error": "query returned no result; check the statement syntax", "results": ""}'
+    exit 1
+  fi
   np service action update --results "{\"results\": $JSON}"
 else
   ENCODED=$(printf '%s' "$(cat "$QUERY_OUTPUT_FILE")" | jq -Rs .)
