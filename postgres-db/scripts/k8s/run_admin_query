@@ -18,7 +18,14 @@ SERVICE_ATTRS=$(echo "$CONTEXT" | jq -r '.service.attributes // {}')
 export SERVICE_HOSTNAME=$(echo "$SERVICE_ATTRS" | jq -r '.hostname        // ""')
 export SERVICE_PORT=$(echo    "$SERVICE_ATTRS" | jq -r '.port            // 5432')
 export SERVICE_DBNAME=$(echo  "$SERVICE_ATTRS" | jq -r '.dbname          // ""')
-SERVICE_SECRET_NAME=$(echo    "$SERVICE_ATTRS" | jq -r '.k8s_secret_name // ""')
+# The platform snake_cases attribute keys in the action context and splits the
+# digit in "k8s", so k8s_secret_name arrives as k_8_s_secret_name. Accept both,
+# and fall back to the name do_helm derives from the release.
+SERVICE_HELM_RELEASE=$(echo "$SERVICE_ATTRS" | jq -r '.helm_release_name // ""')
+SERVICE_SECRET_NAME=$(echo  "$SERVICE_ATTRS" | jq -r '.k8s_secret_name // .k_8_s_secret_name // ""')
+if [ -z "$SERVICE_SECRET_NAME" ] && [ -n "$SERVICE_HELM_RELEASE" ]; then
+  SERVICE_SECRET_NAME="${SERVICE_HELM_RELEASE}-credentials"
+fi
 
 if [ -z "$SERVICE_HOSTNAME" ] || [ -z "$SERVICE_DBNAME" ] || [ -z "$SERVICE_SECRET_NAME" ]; then
   echo "ERROR: service attributes incomplete — hostname='$SERVICE_HOSTNAME' dbname='$SERVICE_DBNAME' k8s_secret_name='$SERVICE_SECRET_NAME'" >&2
