@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.1](https://github.com/nullplatform/services-postgresql-k-8-s/compare/v1.0.0...v1.0.1) (2026-09-10)
+
+
+### Bug Fixes
+
+* read the admin secret name the way the action context delivers it ([77c2133](https://github.com/nullplatform/services-postgresql-k-8-s/commit/77c21336794baf98e4ea8a52ac9a2b19dbfaac87))
+* read the admin secret name the way the action context delivers it ([bebb0d7](https://github.com/nullplatform/services-postgresql-k-8-s/commit/bebb0d7d0d129a482591f76ec1d454c42257f02c))
+
 ## 1.0.0 (2026-09-10)
 
 
