@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.3](https://github.com/nullplatform/services-postgresql-k-8-s/compare/v1.0.2...v1.0.3) (2026-09-14)
+
+
+### Bug Fixes
+
+* **deps:** bump Helm to v3.22.0 ([#12](https://github.com/nullplatform/services-postgresql-k-8-s/issues/12)) ([1e89aae](https://github.com/nullplatform/services-postgresql-k-8-s/commit/1e89aaefe34a9c883bb9400ec27a1269743584b1))
+
 ## [1.0.2](https://github.com/nullplatform/services-postgresql-k-8-s/compare/v1.0.1...v1.0.2) (2026-09-10)
 
 
