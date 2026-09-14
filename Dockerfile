@@ -16,7 +16,7 @@ RUN apk add --no-cache gomplate openssl util-linux
 # kubectl + helm: pinned official static binaries for the build arch, the
 # same way scripts/k8s/ensure_tools installs them when missing.
 ARG KUBECTL_VERSION=v1.31.4
-ARG HELM_VERSION=v3.17.3
+ARG HELM_VERSION=v3.22.0
 ARG TARGETARCH
 RUN curl -fsSL -o /usr/local/bin/kubectl \
       "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/${TARGETARCH}/kubectl" \
