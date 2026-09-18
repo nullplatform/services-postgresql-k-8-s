@@ -5,7 +5,7 @@
 # the bash entrypoint on each package-exec action; this image adds the
 # tooling the helm/kubectl steps need and bakes the service in, so the
 # channel needs no cmdline.
-FROM public.ecr.aws/nullplatform/scopes/worker-bridge:1.0.0
+FROM public.ecr.aws/nullplatform/scopes/worker-bridge:1.1.1
 
 # Tooling the workflows call (the bridge base stays minimal on purpose):
 # gomplate renders the chart values, openssl generates passwords, uuidgen
