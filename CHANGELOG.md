@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.1.0](https://github.com/nullplatform/services-postgresql-k-8-s/compare/v1.0.3...v1.1.0) (2026-09-18)
+
+
+### Features
+
+* dependabot for base image bumps ([56d3f94](https://github.com/nullplatform/services-postgresql-k-8-s/commit/56d3f94554d19fd5f9fc0085b58a9950c8f2f277))
+* dependabot for base image bumps ([bca2b8b](https://github.com/nullplatform/services-postgresql-k-8-s/commit/bca2b8b8ad4d18f4187fef831c8fcae85447a873))
+
+
+### Bug Fixes
+
+* **ci:** auto-merge the release PR from workflow_run; Dependabot commits as fix(deps) ([44ddf3e](https://github.com/nullplatform/services-postgresql-k-8-s/commit/44ddf3ed6bc6e47bdfd6a59bb5dd7d3bdf9352bf))
+* **deps:** bump nullplatform/scopes/worker-bridge from 1.0.0 to 1.1.1 ([8f01ac5](https://github.com/nullplatform/services-postgresql-k-8-s/commit/8f01ac5fc578c7acb7cc05e7f48b9cd25dcf7cbf))
+
 ## [1.0.3](https://github.com/nullplatform/services-postgresql-k-8-s/compare/v1.0.2...v1.0.3) (2026-09-14)
 
 
