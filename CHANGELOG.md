@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/nullplatform/services-postgresql-k-8-s/compare/v1.1.1...v1.1.2) (2026-10-02)
+
+
+### Bug Fixes
+
+* **deps:** update dependency kubernetes/kubernetes to v1.31.14 ([#24](https://github.com/nullplatform/services-postgresql-k-8-s/issues/24)) ([004aec6](https://github.com/nullplatform/services-postgresql-k-8-s/commit/004aec6262f197baebeef2c8727cf7d598a0dd83))
+
 ## [1.1.1](https://github.com/nullplatform/services-postgresql-k-8-s/compare/v1.1.0...v1.1.1) (2026-10-01)
 
 
