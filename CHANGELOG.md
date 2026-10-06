@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.0](https://github.com/nullplatform/services-postgresql-k-8-s/compare/v1.1.2...v1.2.0) (2026-10-06)
+
+
+### Features
+
+* run the worker image as a non-root user ([5d4e866](https://github.com/nullplatform/services-postgresql-k-8-s/commit/5d4e8663366c27d0aac225462a8334956a6dc82e))
+* run the worker image as a non-root user ([071f339](https://github.com/nullplatform/services-postgresql-k-8-s/commit/071f33955cb9e46b038747be216587245c12dbfb))
+
 ## [1.1.2](https://github.com/nullplatform/services-postgresql-k-8-s/compare/v1.1.1...v1.1.2) (2026-10-02)
 
 
