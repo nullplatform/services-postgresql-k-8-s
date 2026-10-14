@@ -121,7 +121,7 @@ module "postgres_db" {
 | Variable | Type | Sensitive | Description |
 |---|---|---|---|
 | `nrn` | `string` | No | Nullplatform Resource Name |
-| `np_api_key` | `string` | Yes | API key for authenticating with nullplatform |
+| `np_api_key` | `string` | Yes | API key the provider authenticates with. It must be able to assign the `controlplane:agent-dispatcher` role (`admin`, `ops` or `secops`) |
 | `tags_selectors` | `map(string)` | No | Tags used to select channels and agents |
 | `repository_branch` | `string` | No | Branch to pull specs from (default `main`) |
 
@@ -135,9 +135,9 @@ module "postgres_db" {
 The module internally uses [`nullplatform/tofu-modules`](https://github.com/nullplatform/tofu-modules):
 
 - `nullplatform/service_definition@v1.52.3` — registers the service spec from this repo on GitHub
-- `nullplatform/service_definition_agent_association@v1.43.0` — wires the agent command to the service (pointing at `postgres-db/entrypoint/entrypoint`)
+- `nullplatform/service_definition_agent_association@v8.7.0` — wires the agent command to the service (pointing at `postgres-db/entrypoint/entrypoint`). The channel takes no API key: nullplatform creates and manages its credential, scoped to dispatching commands to agents
 
-Requires the `nullplatform` Terraform provider `~> 0.0.75`.
+Requires the `nullplatform` Terraform provider `~> 0.0.107`.
 
 ## Important considerations
 
