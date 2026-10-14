@@ -16,11 +16,14 @@ module "service_definition_postgres_db" {
 
 ###############################################################################
 # Service Agent Association: Postgres DB (K8S)
+#
+# No api_key: nullplatform creates and manages the channel's credential, scoped
+# to dispatching commands to agents. np_api_key only authenticates the provider
+# and must be able to assign the controlplane:agent-dispatcher role.
 ###############################################################################
 module "service_definition_channel_association_postgres_db" {
-  source                       = "git::https://github.com/nullplatform/tofu-modules.git//nullplatform/service_definition_agent_association?ref=v1.43.0"
+  source                       = "git::https://github.com/nullplatform/tofu-modules.git//nullplatform/service_definition_agent_association?ref=v8.7.0"
   nrn                          = var.nrn
-  api_key                      = var.np_api_key
   tags_selectors               = var.tags_selectors
   service_specification_slug   = module.service_definition_postgres_db.service_specification_slug
   repository_service_spec_repo = "nullplatform/services-postgresql-k-8-s"
