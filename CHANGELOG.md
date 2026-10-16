@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/nullplatform/services-postgresql-k-8-s/compare/v1.2.0...v1.2.1) (2026-10-16)
+
+
+### Bug Fixes
+
+* **deps:** update dependency helm/helm to v3.22.1 ([#31](https://github.com/nullplatform/services-postgresql-k-8-s/issues/31)) ([9426e41](https://github.com/nullplatform/services-postgresql-k-8-s/commit/9426e41b6ea127eaa6f0acb2736a9dc09021b252))
+
 ## [1.2.0](https://github.com/nullplatform/services-postgresql-k-8-s/compare/v1.1.2...v1.2.0) (2026-10-06)
 
 
