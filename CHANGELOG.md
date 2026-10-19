@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.3](https://github.com/nullplatform/services-postgresql-k-8-s/compare/v1.2.2...v1.2.3) (2026-10-19)
+
+
+### Bug Fixes
+
+* show Kubernetes as the provider ([#34](https://github.com/nullplatform/services-postgresql-k-8-s/issues/34)) ([b694d73](https://github.com/nullplatform/services-postgresql-k-8-s/commit/b694d73b376f5d2dda45c3045dc30be2177579b9))
+
 ## [1.2.2](https://github.com/nullplatform/services-postgresql-k-8-s/compare/v1.2.1...v1.2.2) (2026-10-16)
 
 
