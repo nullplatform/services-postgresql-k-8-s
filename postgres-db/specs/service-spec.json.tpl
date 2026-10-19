@@ -10,7 +10,7 @@
   "selectors": {
     "category": "Database",
     "imported": false,
-    "provider": "K8S",
+    "provider": "Kubernetes",
     "sub_category": "Relational Database"
   },
   "attributes": {
