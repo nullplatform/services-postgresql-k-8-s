@@ -8,7 +8,7 @@ variable "nrn" {
 }
 
 variable "np_api_key" {
-  description = "API key for authenticating with the Nullplatform API"
+  description = "API key the nullplatform provider authenticates with. It must be able to assign the controlplane:agent-dispatcher role (admin, ops or secops); it is not stored in the notification channel."
   type        = string
   sensitive   = true
 }
