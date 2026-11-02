@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.5](https://github.com/nullplatform/services-postgresql-k-8-s/compare/v1.2.4...v1.2.5) (2026-11-02)
+
+
+### Bug Fixes
+
+* **deps:** bump nullplatform/scopes/worker-bridge from 2.0.6 to 2.0.7 ([#39](https://github.com/nullplatform/services-postgresql-k-8-s/issues/39)) ([c3918b6](https://github.com/nullplatform/services-postgresql-k-8-s/commit/c3918b653a0f84b4ebdce7db55edcff05e8200d5))
+
 ## [1.2.4](https://github.com/nullplatform/services-postgresql-k-8-s/compare/v1.2.3...v1.2.4) (2026-10-26)
 
 
