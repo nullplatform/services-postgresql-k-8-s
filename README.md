@@ -23,12 +23,12 @@ The service lives under [`postgres-db/`](./postgres-db) so the repo stays open f
 │   │   └── actions/
 │   │       ├── run-ddl-query.json.tpl
 │   │       └── run-dml-query.json.tpl
+│   ├── publish/                          # publishes the service as a package (release workflow only)
 │   ├── workflows/k8s/                    # Workflow YAMLs (create/update/delete/link/link-update/unlink/run-ddl-query/run-dml-query)
 │   ├── scripts/k8s/                      # build_context, build_user_context, do_helm, run_query, write_*_outputs, cleanup_pvc, ensure_tools, ...
 │   ├── entrypoint/                       # entrypoint/service/link (agent entrypoint trio)
 │   ├── values.yaml                       # Static config (namespace, chart repo, chart version)
 │   └── values.yaml.tpl                   # Bitnami chart values template (gomplate)
-├── tofu-module/                          # OpenTofu module to register the service in nullplatform
 └── README.md
 ```
 
@@ -102,42 +102,44 @@ The Kubernetes cluster where this service runs must have:
 
 Anything missing is installed on-demand by `scripts/k8s/ensure_tools`.
 
-## How to register this service in nullplatform
+## Install in your organization
 
-Register the service definition in your nullplatform account using the provided OpenTofu module under [`tofu-module/`](./tofu-module):
+The service is published once as the package `np-postgres-db` (specification "Postgres DB"), visible to every organization. You do not copy its specs: you install the package and use it read-only.
+
+How installing a package works, how it coexists with a copy you registered, how to upgrade, and when to fork instead are in the [package installation guide](https://docs.nullplatform.com/docs/packages/install); this section has what is specific to this service.
+
+The service needs no infrastructure layer of its own: the worker runs on the agent's cluster with the agent's Kubernetes identity, and what the cluster must have is in [Requirements](#requirements). Installing it is the nullplatform layer alone:
+
+| Layer | What | Module |
+|---|---|---|
+| nullplatform (nullplatform API key) | The installation of the package and the agent channel | tofu-modules' `service_package_installation` |
+
+Pick ONE release of this repository (the latest is on its [releases page](https://github.com/nullplatform/services-postgresql-k-8-s/releases)) and install its version.
 
 ```hcl
+# ── nullplatform layer ───────────────────────────────────────────────
+# The same module a catalog entry with `install_package` becomes. For a
+# service the installation is the whole nullplatform side, channel included.
 module "postgres_db" {
-  source = "git::https://github.com/nullplatform/services-postgresql-k-8-s.git//tofu-module?ref=main"
+  source = "git::https://github.com/nullplatform/tofu-modules.git//nullplatform/service_package_installation?ref=v9.16.0"
 
-  nrn            = var.nrn
-  np_api_key     = var.np_api_key
-  tags_selectors = var.tags_selectors
+  nrn                  = var.nrn
+  package_slug         = "np-postgres-db"
+  package_version      = "X.Y.Z" # the same release, without the v
+  agent_tags_selectors = { cluster = "runtime" } # must match the agent's TAGS
 }
+# Keeping channels in a separate bindings layer instead? Use
+# nullplatform/package_installation here and service_definition_agent_association
+# there, with package_slug = "np-postgres-db".
 ```
 
-**Variables:**
+The link `database-user` and the actions `run-ddl-query` and `run-dml-query` come with the package. To upgrade, move `package_version` to the new release. See tofu-modules' [`service_package_installation`](https://github.com/nullplatform/tofu-modules/tree/main/nullplatform/service_package_installation) for its inputs and outputs.
 
-| Variable | Type | Sensitive | Description |
-|---|---|---|---|
-| `nrn` | `string` | No | Nullplatform Resource Name |
-| `np_api_key` | `string` | Yes | API key for authenticating with nullplatform |
-| `tags_selectors` | `map(string)` | No | Tags used to select channels and agents |
-| `repository_branch` | `string` | No | Branch to pull specs from (default `main`) |
+Prerequisites: an agent whose `TAGS` match the channel's `tags_selectors`, with `public.ecr.aws/nullplatform/*` in `worker.allowedRegistries` and `np-postgres-db` in its `worker_orchestrated_packages` (the worker then runs as the agent's service account, the one with the RBAC above), on a cluster that meets the [cluster prerequisites](#cluster-prerequisites).
 
-**Outputs:**
+## How the package is published
 
-| Output | Description |
-|---|---|
-| `service_specification_slug_postgres_db` | Slug of the Postgres DB service specification |
-| `service_specification_id_postgres_db` | ID of the Postgres DB service specification |
-
-The module internally uses [`nullplatform/tofu-modules`](https://github.com/nullplatform/tofu-modules):
-
-- `nullplatform/service_definition@v1.52.3` — registers the service spec from this repo on GitHub
-- `nullplatform/service_definition_agent_association@v1.43.0` — wires the agent command to the service (pointing at `postgres-db/entrypoint/entrypoint`)
-
-Requires the `nullplatform` Terraform provider `~> 0.0.75`.
+Every release publishes a new revision of the package from this repository, in the same run that pushes the worker image ([`.github/workflows/release.yml`](./.github/workflows/release.yml)): the `publish-package` job applies [`postgres-db/publish`](./postgres-db/publish), a stack on tofu-modules' `service_package_publish`, which pins this tag's specs and the image by digest. The package version is the release tag, as for the image. The stack keeps its state where the organization secrets `PACKAGE_STATE_AWS_ACCOUNT_ID`, `PACKAGE_TFSTATE_BUCKET` and `PACKAGE_TFSTATE_REGION` point; the state role is `github-actions-<repository>-package-state` in that account, by convention.
 
 ## Important considerations
 
