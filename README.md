@@ -29,6 +29,7 @@ The service lives under [`postgres-db/`](./postgres-db) so the repo stays open f
 │   ├── entrypoint/                       # entrypoint/service/link (agent entrypoint trio)
 │   ├── values.yaml                       # Static config (namespace, chart repo, chart version)
 │   └── values.yaml.tpl                   # Bitnami chart values template (gomplate)
+├── tofu-module/                          # deprecated: registers a copy; kept for root modules that source it
 └── README.md
 ```
 
@@ -107,6 +108,8 @@ Anything missing is installed on-demand by `scripts/k8s/ensure_tools`.
 The service is published once as the package `np-postgres-db` (specification "Postgres DB"), visible to every organization. You do not copy its specs: you install the package and use it read-only.
 
 How installing a package works, how it coexists with a copy you registered, how to upgrade, and when to fork instead are in the [package installation guide](https://docs.nullplatform.com/docs/packages/install); this section has what is specific to this service.
+
+Already registered a copy with [`tofu-module/`](./tofu-module)? It keeps working, and the module stays in the repository, frozen and deprecated, so a root module that sources it keeps initializing; the package installs next to the copy, as the guide explains.
 
 The service needs no infrastructure layer of its own: the worker runs on the agent's cluster with the agent's Kubernetes identity, and what the cluster must have is in [Requirements](#requirements). Installing it is the nullplatform layer alone:
 
