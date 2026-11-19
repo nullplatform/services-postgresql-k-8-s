@@ -1,4 +1,11 @@
 ###############################################################################
+# DEPRECATED. This module registers a COPY of the service with service_definition
+# and is kept, frozen, only for root modules that already source it (the README
+# used to show it at ?ref=main; removing it would break them at init). It is not
+# updated anymore: new installations use the package np-postgres-db through
+# tofu-modules' service_package_installation, as the README explains.
+###############################################################################
+###############################################################################
 # Service Definition: Postgres DB (K8S)
 ###############################################################################
 module "service_definition_postgres_db" {
