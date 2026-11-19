@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.0](https://github.com/nullplatform/services-postgresql-k-8-s/compare/v1.2.5...v1.3.0) (2026-11-19)
+
+
+### Features
+
+* **package:** publish the service as a global package ([c150bf7](https://github.com/nullplatform/services-postgresql-k-8-s/commit/c150bf7a485f81d05386d08b632e1424e14df75d))
+* **package:** publish the service as a global package ([af4ab08](https://github.com/nullplatform/services-postgresql-k-8-s/commit/af4ab08b32c879ecfa520626877e9f0525f3bd30))
+
 ## [1.2.5](https://github.com/nullplatform/services-postgresql-k-8-s/compare/v1.2.4...v1.2.5) (2026-11-02)
 
 
